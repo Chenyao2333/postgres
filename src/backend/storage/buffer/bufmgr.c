@@ -57,7 +57,8 @@
 
 #define CMUDB_LOG
 #ifdef CMUDB_LOG
-#define cmulog(func_name, format, ...) elog(LOG, "[CMUDB] func=%s, my_backend_id=%d, parallel_master_backend_id=%d, " format, func_name, MyBackendId, ParallelMasterBackendId,  __VA_ARGS__)
+#include "stdio.h"
+#define cmulog(func_name, format, ...) printf("[CMUDB] func=%s, my_backend_id=%d, parallel_master_backend_id=%d, " format "\n", func_name, MyBackendId, ParallelMasterBackendId,  __VA_ARGS__)
 #else
 #define cmulog(func_name, format, ...) // do noting
 #endif
