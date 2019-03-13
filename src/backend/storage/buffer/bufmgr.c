@@ -53,6 +53,16 @@
 #include "utils/timestamp.h"
 
 
+#include "storage/backendid.h"
+
+#define CMUDB_LOG
+#ifdef CMUDB_LOG
+#define cmulog(func_name, format, ...) elog(LOG, "[CMUDB] func=%s, my_backend_id=%d, parallel_master_backend_id=%d, " format, func_name, MyBackendId, ParallelMasterBackendId,  __VA_ARGS__)
+#else
+#define cmulog(func_name, format, ...) // do noting
+#endif
+
+
 /* Note: these two macros only work on shared buffers, not local ones! */
 #define BufHdrGetBlock(bufHdr)	((Block) (BufferBlocks + ((Size) (bufHdr)->buf_id) * BLCKSZ))
 #define BufferGetLSN(bufHdr)	(PageGetLSN(BufHdrGetBlock(bufHdr)))
@@ -593,7 +603,9 @@ PrefetchBuffer(Relation reln, ForkNumber forkNum, BlockNumber blockNum)
 Buffer
 ReadBuffer(Relation reln, BlockNumber blockNum)
 {
-	return ReadBufferExtended(reln, MAIN_FORKNUM, blockNum, RBM_NORMAL, NULL);
+	Buffer buffer = ReadBufferExtended(reln, MAIN_FORKNUM, blockNum, RBM_NORMAL, NULL);
+	cmulog("ReadBuffer", "reln_name=%s, block_num=%d, buffer=%d", RelationGetRelationName(reln), blockNum, buffer);
+	return buffer;
 }
 
 /*
@@ -1449,6 +1461,7 @@ retry:
 void
 MarkBufferDirty(Buffer buffer)
 {
+	cmulog("MarkBufferDirty", "buffer=%d", buffer);
 	BufferDesc *bufHdr;
 	uint32		buf_state;
 	uint32		old_buf_state;
@@ -3305,9 +3318,9 @@ FlushOneBuffer(Buffer buffer)
 /*
  * ReleaseBuffer -- release the pin on a buffer
  */
-void
-ReleaseBuffer(Buffer buffer)
+void ReleaseBuffer(Buffer buffer)
 {
+	cmulog("ReleaseBuffer", "buffer=%d", buffer);
 	if (!BufferIsValid(buffer))
 		elog(ERROR, "bad buffer ID: %d", buffer);
 
