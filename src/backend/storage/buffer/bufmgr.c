@@ -605,6 +605,7 @@ Buffer
 ReadBuffer(Relation reln, BlockNumber blockNum)
 {
 	Buffer buffer = ReadBufferExtended(reln, MAIN_FORKNUM, blockNum, RBM_NORMAL, NULL);
+	// FIXME: ReadBuffer will call PinBuffer, so it's duplicated. But we can not get relation name from PinBuffer
 	cmulog("ReadBuffer", "reln_name=%s, block_num=%d, buffer=%d", RelationGetRelationName(reln), blockNum, buffer);
 	return buffer;
 }
@@ -1588,6 +1589,8 @@ PinBuffer(BufferDesc *buf, BufferAccessStrategy strategy)
 	bool		result;
 	PrivateRefCountEntry *ref;
 
+	cmulog("PinBuffer", "buffer=%d", b);
+
 	ref = GetPrivateRefCountEntry(b, true);
 
 	if (ref == NULL)
@@ -1690,6 +1693,8 @@ PinBuffer_Locked(BufferDesc *buf)
 
 	b = BufferDescriptorGetBuffer(buf);
 
+	cmulog("PinBuffer_Locked", "buffer=%d", b);
+
 	ref = NewPrivateRefCountEntry(b);
 	ref->refcount++;
 
@@ -1709,6 +1714,7 @@ UnpinBuffer(BufferDesc *buf, bool fixOwner)
 {
 	PrivateRefCountEntry *ref;
 	Buffer		b = BufferDescriptorGetBuffer(buf);
+	cmulog("UnpinBuffer", "buffer=%d", b);
 
 	/* not moving as we're likely deleting it soon anyway */
 	ref = GetPrivateRefCountEntry(b, false);
@@ -3360,6 +3366,7 @@ UnlockReleaseBuffer(Buffer buffer)
 void
 IncrBufferRefCount(Buffer buffer)
 {
+	cmulog("IncrBufferRefCount", "buffer=%d", buffer);
 	Assert(BufferIsPinned(buffer));
 	ResourceOwnerEnlargeBuffers(CurrentResourceOwner);
 	if (BufferIsLocal(buffer))
