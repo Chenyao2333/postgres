@@ -52,38 +52,10 @@
 #include "utils/resowner_private.h"
 #include "utils/timestamp.h"
 
-
-#include "storage/backendid.h"
-
-// CMUDB_LOG controls whether to log down the traces
-
-// ReadBuffer/ReleaseBuffer can call PinBuffer/UnpinBuffer.
-// ReadBuffer Can suggest you which relation is reading.
-// If buffer < 0, it's local buffer; ReleaseBuffer is for
-// both local and shared buffer. You can ignore ReleaseBuffer.
-
-// But I think this is still not what we want. Buffer
-// replacement processor will also use pin/unpin operations.
-// The operations introduced by query plane is what we truly want.
-// (And where is the FLUSH operation, we can not track them now.)
-// Don’t forget postgres utilize OS cache. If we just simulated
-// the sort of pin/unpin operations, what we do is comparing 
-// mmap and OS cache! We will suck on it!
-#define CMUDB_LOG
-
-
 #ifdef CMUDB_LOG
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
-#include "postmaster/postmaster.h"
-
-FILE *cmu_logfiles[MAX_BACKENDS+10];
-struct pg_atomic_uint32 updating = {0};
-int FREE = 0;
-int USING = 1;
+static
 void enusure_logfiles_is_open() {
+	// We assume it's mutlti-process, single-thread, so there is no contention, lock is un-necessary.
 	if (!cmu_logfiles[MyBackendId]) { // no others opened file before acquire lock
 		char filename[100];
 		snprintf(filename, sizeof(filename), "/tmp/cmulog.txt.%d", MyBackendId);
@@ -97,17 +69,6 @@ void enusure_logfiles_is_open() {
 		Assert(cmu_logfiles[MyBackendId] != NULL);
 	}
 }
-#define cmulog(func_name, format, ...) if (MyBackendId >= 0) { \
-	enusure_logfiles_is_open(); \
-	struct timespec spec; \
-    clock_gettime(CLOCK_REALTIME, &spec); \
-	fprintf(cmu_logfiles[MyBackendId], \
-		"[CMUDB] timestamp_ns=%lld.%09ld, func=%s, my_backend_id=%d, parallel_master_backend_id=%d, " format "\n", \
-		(long long)spec.tv_sec, spec.tv_nsec, \
-		func_name, MyBackendId, ParallelMasterBackendId,  __VA_ARGS__); \
-}
-#else
-#define cmulog(func_name, format, ...) // do noting
 #endif
 
 

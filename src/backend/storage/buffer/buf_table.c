@@ -103,6 +103,9 @@ BufTableLookup(BufferTag *tagPtr, uint32 hashcode)
 	if (!result)
 		return -1;
 
+	cmulog("BufTableLookup", "buffer_tag_forknum=%d, buffer_tag_blocknum=%d, buffer_id=%d",
+		result->key.forkNum, result->key.blockNum, result->id);
+	
 	return result->id;
 }
 
