@@ -2688,6 +2688,9 @@ FlushBuffer(BufferDesc *buf, SMgrRelation reln)
 	if (!StartBufferIO(buf, false))
 		return;
 
+	cmulog("FlushBuffer", "buffer_tag_forknum=%d, buffer_tag_blocknum=%d, buffer_id=%d",
+		buf->tag.forkNum, buf->tag.blockNum, buf->buf_id);
+
 	/* Setup error traceback support for ereport() */
 	errcallback.callback = shared_buffer_write_error_callback;
 	errcallback.arg = (void *) buf;
@@ -3158,6 +3161,8 @@ FlushRelationBuffers(Relation rel)
 	int			i;
 	BufferDesc *bufHdr;
 
+	cmulog("FlushRelationBuffers", "rel_name=%s", RelationGetRelationName(rel));
+
 	/* Open rel at the smgr level if not already done */
 	RelationOpenSmgr(rel);
 
@@ -3255,6 +3260,8 @@ FlushDatabaseBuffers(Oid dbid)
 {
 	int			i;
 	BufferDesc *bufHdr;
+
+	cmulog("FlushDatabaseBuffers", "dbid=%ud", dbid);
 
 	/* Make sure we can handle the pin inside the loop */
 	ResourceOwnerEnlargeBuffers(CurrentResourceOwner);
@@ -4254,6 +4261,8 @@ ScheduleBufferTagForWriteback(WritebackContext *context, BufferTag *tag)
 {
 	PendingWriteback *pending;
 
+	cmulog("ScheduleBufferTagForWriteback", "buffer_tag_forknum=%d, buffer_tag_blocknum=%d", tag->forkNum, tag->blockNum);
+
 	/*
 	 * Add buffer to the pending writeback array, unless writeback control is
 	 * disabled.
@@ -4345,6 +4354,8 @@ IssuePendingWritebacks(WritebackContext *context)
 		/* and finally tell the kernel to write the data to storage */
 		reln = smgropen(tag.rnode, InvalidBackendId);
 		smgrwriteback(reln, tag.forkNum, tag.blockNum, nblocks);
+
+
 	}
 
 	context->nr_pending = 0;
