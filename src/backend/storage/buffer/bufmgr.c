@@ -57,8 +57,39 @@
 
 #define CMUDB_LOG
 #ifdef CMUDB_LOG
-#include "stdio.h"
-#define cmulog(func_name, format, ...) printf("[CMUDB] func=%s, my_backend_id=%d, parallel_master_backend_id=%d, " format "\n", func_name, MyBackendId, ParallelMasterBackendId,  __VA_ARGS__)
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include "postmaster/postmaster.h"
+
+FILE *cmu_logfiles[MAX_BACKENDS+10];
+struct pg_atomic_uint32 updating = {0};
+int FREE = 0;
+int USING = 1;
+void enusure_logfiles_is_open() {
+	if (!cmu_logfiles[MyBackendId]) { // no others opened file before acquire lock
+		char filename[100];
+		snprintf(filename, sizeof(filename), "/tmp/cmulog.txt.%d", MyBackendId);
+		cmu_logfiles[MyBackendId] = fopen(filename, "a");
+		if (cmu_logfiles[MyBackendId] != NULL) {
+			printf("opened %s\n", filename);
+		} else {
+			printf("fail to open %s\n", filename);
+		}
+		
+		Assert(cmu_logfiles[MyBackendId] != NULL);
+	}
+}
+#define cmulog(func_name, format, ...) if (MyBackendId >= 0) { \
+	enusure_logfiles_is_open(); \
+	struct timespec spec; \
+    clock_gettime(CLOCK_REALTIME, &spec); \
+	fprintf(cmu_logfiles[MyBackendId], \
+		"[CMUDB] timestamp_ns=%lld.%09ld, func=%s, my_backend_id=%d, parallel_master_backend_id=%d, " format "\n", \
+		(long long)spec.tv_sec, spec.tv_nsec, \
+		func_name, MyBackendId, ParallelMasterBackendId,  __VA_ARGS__); \
+}
 #else
 #define cmulog(func_name, format, ...) // do noting
 #endif
