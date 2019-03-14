@@ -55,7 +55,23 @@
 
 #include "storage/backendid.h"
 
+// CMUDB_LOG controls whether to log down the traces
+
+// ReadBuffer/ReleaseBuffer can call PinBuffer/UnpinBuffer.
+// ReadBuffer Can suggest you which relation is reading.
+// If buffer < 0, it's local buffer; ReleaseBuffer is for
+// both local and shared buffer. You can ignore ReleaseBuffer.
+
+// But I think this is still not what we want. Buffer
+// replacement processor will also use pin/unpin operations.
+// The operations introduced by query plane is what we truly want.
+// (And where is the FLUSH operation, we can not track them now.)
+// Don’t forget postgres utilize OS cache. If we just simulated
+// the sort of pin/unpin operations, what we do is comparing 
+// mmap and OS cache! We will suck on it!
 #define CMUDB_LOG
+
+
 #ifdef CMUDB_LOG
 #include <stdlib.h>
 #include <stdio.h>
