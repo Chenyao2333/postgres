@@ -248,7 +248,6 @@ extern void FreeAccessStrategy(BufferAccessStrategy strategy);
 // mmap and OS cache! We will suck on it!
 #define CMUDB_LOG
 
-
 #ifdef CMUDB_LOG
 #include <stdlib.h>
 #include <stdio.h>
@@ -257,16 +256,18 @@ extern void FreeAccessStrategy(BufferAccessStrategy strategy);
 #include "storage/backendid.h"
 #include "postmaster/postmaster.h"
 
-FILE *cmu_logfiles[MAX_BACKENDS+10];
-static void enusure_logfiles_is_open();
-#define cmulog(func_name, format, ...) if (MyBackendId >= 0) { \
-	enusure_logfiles_is_open(); \
+//#define CMU_LOGFILES (MAX_BACKENDS+10)
+#define CMU_LOGFILES 120
+FILE *cmu_logfiles[CMU_LOGFILES];
+#define cmulog(func_name, format, ...) if (MyBackendId >= -5  && MyBackendId < CMU_LOGFILES - 5) { \
 	struct timespec spec; \
     clock_gettime(CLOCK_REALTIME, &spec); \
-	fprintf(cmu_logfiles[MyBackendId], \
+	fprintf(cmu_logfiles[MyBackendId+5], \
 		"[CMUDB] timestamp_ns=%lld.%09ld, func=%s, my_backend_id=%d, parallel_master_backend_id=%d, " format "\n", \
 		(long long)spec.tv_sec, spec.tv_nsec, \
 		func_name, MyBackendId, ParallelMasterBackendId,  __VA_ARGS__); \
+} else { \
+	elog(ERROR, "MyBackendId = %d is not in traces range.", MyBackendId); \
 }
 #else
 #define cmulog(func_name, format, ...) // do noting

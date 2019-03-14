@@ -58,6 +58,23 @@ CkptSortItem *CkptBufferIds;
  */
 
 
+#ifdef CMUDB_LOG
+void enusure_logfiles_is_open(int id) {
+	if (!cmu_logfiles[id]) { // no others opened file before acquire lock
+		char filename[100];
+		snprintf(filename, sizeof(filename), "/tmp/cmulog.txt.%d", id-5);
+		cmu_logfiles[id] = fopen(filename, "a");
+		if (cmu_logfiles[id] != NULL) {
+			// printf("opened %s\n", filename);
+		} else {
+			printf("fail to open %s\n", filename);
+		}
+		
+		Assert(cmu_logfiles[id] != NULL);
+	}
+}
+#endif
+
 /*
  * Initialize shared buffer pool
  *
@@ -71,6 +88,12 @@ InitBufferPool(void)
 				foundDescs,
 				foundIOLocks,
 				foundBufCkpt;
+
+#ifdef CMUDB_LOG
+	for (int i = 0; i < CMU_LOGFILES; i++) {
+		enusure_logfiles_is_open(i);
+	}
+#endif
 
 	/* Align descriptors to a cacheline boundary. */
 	BufferDescriptors = (BufferDescPadded *)

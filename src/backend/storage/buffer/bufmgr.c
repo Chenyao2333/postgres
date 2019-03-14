@@ -52,26 +52,6 @@
 #include "utils/resowner_private.h"
 #include "utils/timestamp.h"
 
-#ifdef CMUDB_LOG
-static
-void enusure_logfiles_is_open() {
-	// We assume it's mutlti-process, single-thread, so there is no contention, lock is un-necessary.
-	if (!cmu_logfiles[MyBackendId]) { // no others opened file before acquire lock
-		char filename[100];
-		snprintf(filename, sizeof(filename), "/tmp/cmulog.txt.%d", MyBackendId);
-		cmu_logfiles[MyBackendId] = fopen(filename, "a");
-		if (cmu_logfiles[MyBackendId] != NULL) {
-			printf("opened %s\n", filename);
-		} else {
-			printf("fail to open %s\n", filename);
-		}
-		
-		Assert(cmu_logfiles[MyBackendId] != NULL);
-	}
-}
-#endif
-
-
 /* Note: these two macros only work on shared buffers, not local ones! */
 #define BufHdrGetBlock(bufHdr)	((Block) (BufferBlocks + ((Size) (bufHdr)->buf_id) * BLCKSZ))
 #define BufferGetLSN(bufHdr)	(PageGetLSN(BufHdrGetBlock(bufHdr)))
