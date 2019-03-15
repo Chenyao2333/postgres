@@ -727,8 +727,9 @@ ReadBuffer_common(SMgrRelation smgr, char relpersistence, ForkNumber forkNum,
 									   isExtend);
 
 	/* Substitute proper block number if caller asked for P_NEW */
-	if (isExtend)
+	if (isExtend)  {
 		blockNum = smgrnblocks(smgr, forkNum);
+	}
 
 	if (isLocalBuf)
 	{
@@ -963,7 +964,11 @@ ReadBuffer_common(SMgrRelation smgr, char relpersistence, ForkNumber forkNum,
 									  isExtend,
 									  found);
 
-	return BufferDescriptorGetBuffer(bufHdr);
+	Buffer buf = BufferDescriptorGetBuffer(bufHdr);
+	if (isExtend) {
+		cmulog("ReadBuffer_common(extend)", "block_num=%d, is_localbuf=%d, buffer_id=%d", blockNum, (int)isLocalBuf, buf);
+	}
+	return buf;
 }
 
 /*
