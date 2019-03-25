@@ -65,6 +65,8 @@
 #include "utils/timestamp.h"
 #include "pg_trace.h"
 
+// for cmudblog
+#include "storage/bufmgr.h"
 
 /*
  *	User-tweakable parameters
@@ -1958,6 +1960,8 @@ StartTransaction(void)
 	 */
 	s->state = TRANS_INPROGRESS;
 
+	cmulog("StartTransaction", "transaction_id=%d", s->transactionId);
+
 	ShowTransactionState("StartTransaction");
 }
 
@@ -1980,6 +1984,7 @@ CommitTransaction(void)
 	if (is_parallel_worker)
 		EnterParallelMode();
 
+	cmulog("CommitTransaction", "transaction_id=%d", s->transactionId);
 	ShowTransactionState("CommitTransaction");
 
 	/*
@@ -2496,6 +2501,8 @@ AbortTransaction(void)
 	TransactionState s = CurrentTransactionState;
 	TransactionId latestXid;
 	bool		is_parallel_worker;
+
+	cmulog("AbortTransaction", "transaction_id=%d", s->transactionId);
 
 	/* Prevent cancel/die interrupt while cleaning up */
 	HOLD_INTERRUPTS();
